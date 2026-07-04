@@ -2,733 +2,573 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
     <title>KUIML Ace</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         :root {
-            --bg: #0d0d12;
-            --panel: #16161e;
-            --panel-hover: #1e1e28;
-            --accent: #2a2a3a;
-            --accent-hover: #35354a;
-            --highlight: #c75b5b;
-            --highlight-hover: #d46e6e;
-            --text: #e0e0e8;
-            --text-dim: #7a7a8a;
-            --border: #2a2a3a;
-            --border-hover: #3a3a4a;
-            --success: #5b9a6b;
-            --canvas-bg: #0a0a10;
+            --bg: #0d0d12; --panel: #16161e; --panel-hover: #1e1e28; --accent: #2a2a3a; --accent-hover: #35354a;
+            --highlight: #c75b5b; --highlight-hover: #d46e6e; --text: #e0e0e8; --text-dim: #7a7a8a;
+            --border: #2a2a3a; --border-hover: #3a3a4a; --canvas-bg: #0a0a10;
+            --safe-top: env(safe-area-inset-top, 0px); --safe-bottom: env(safe-area-inset-bottom, 0px);
         }
-        body {
+        html, body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            height: 100vh;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            font-size: 13px;
+            background: var(--bg); color: var(--text); height: 100vh; height: 100dvh;
+            overflow: hidden; display: flex; flex-direction: column; font-size: 14px; touch-action: none;
         }
         .header {
-            height: 44px;
-            background: var(--panel);
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            padding: 0 16px;
-            gap: 12px;
-            flex-shrink: 0;
+            height: 52px; background: var(--panel); border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; padding: 0 16px; gap: 12px; flex-shrink: 0; padding-top: var(--safe-top);
         }
-        .logo {
-            font-size: 14px;
-            font-weight: 700;
-            color: var(--highlight);
-            letter-spacing: 2px;
-            margin-right: 8px;
-        }
+        .logo { font-size: 15px; font-weight: 700; color: var(--highlight); letter-spacing: 2px; }
+        .header-spacer { flex: 1; }
         .header-btn {
-            background: var(--accent);
-            border: 1px solid var(--border);
-            color: var(--text);
-            padding: 5px 14px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-            font-weight: 500;
-            transition: all 0.15s;
-            font-family: inherit;
+            background: var(--accent); border: 1px solid var(--border); color: var(--text);
+            padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;
+            font-family: inherit; -webkit-appearance: none; transition: all 0.15s;
         }
-        .header-btn:hover { background: var(--accent-hover); border-color: var(--border-hover); }
+        .header-btn:active { transform: scale(0.96); }
+        .header-btn:hover { background: var(--accent-hover); }
         .header-btn.primary { background: var(--highlight); border-color: var(--highlight); }
         .header-btn.primary:hover { background: var(--highlight-hover); }
         .header-btn.danger { background: #8b3a3a; border-color: #8b3a3a; }
         .header-btn.danger:hover { background: #a04040; }
-        .header-spacer { flex: 1; }
-        .header-info {
-            font-size: 11px;
-            color: var(--text-dim);
-        }
-        .main {
-            flex: 1;
-            display: flex;
-            overflow: hidden;
-        }
-        .sidebar {
-            width: 210px;
-            background: var(--panel);
-            border-right: 1px solid var(--border);
-            display: flex;
-            flex-direction: column;
-            flex-shrink: 0;
-            overflow: hidden;
-        }
-        .sidebar-section {
-            padding: 14px;
-            border-bottom: 1px solid var(--border);
-        }
-        .sidebar-section:last-child { flex: 1; overflow-y: auto; }
-        .sidebar-title {
-            font-size: 10px;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            color: var(--text-dim);
-            margin-bottom: 10px;
-            font-weight: 600;
-        }
-        .component-list {
-            display: flex;
-            flex-direction: column;
-            gap: 3px;
-        }
-        .component-item {
-            padding: 7px 10px;
-            border-radius: 4px;
-            cursor: grab;
-            font-size: 12px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.12s;
-            border: 1px solid transparent;
-            user-select: none;
-        }
-        .component-item:hover {
-            background: var(--accent);
-            border-color: var(--border-hover);
-        }
-        .component-item:active { cursor: grabbing; }
-        .component-icon {
-            width: 14px;
-            height: 14px;
-            border-radius: 2px;
-            background: var(--highlight);
-            opacity: 0.5;
-            flex-shrink: 0;
-        }
-        .canvas-area {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            background: var(--bg);
-            min-width: 0;
-        }
-        .canvas-tabs {
-            height: 34px;
-            background: var(--panel);
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            padding: 0 12px;
-            gap: 2px;
-            flex-shrink: 0;
-        }
-        .tab {
-            padding: 6px 16px;
-            font-size: 12px;
-            border-radius: 4px 4px 0 0;
-            cursor: pointer;
-            border-bottom: 2px solid transparent;
-            transition: all 0.15s;
-            color: var(--text-dim);
-            user-select: none;
-        }
-        .tab.active {
-            color: var(--text);
-            border-bottom-color: var(--highlight);
-        }
-        .tab:hover:not(.active) { color: var(--text); }
-        .canvas-wrapper {
-            flex: 1;
-            padding: 20px;
-            overflow: auto;
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-        }
+        .header-btn.icon-only { padding: 6px 10px; min-width: 36px; display: flex; align-items: center; justify-content: center; }
+        .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+        .canvas-wrapper { flex: 1; overflow: auto; -webkit-overflow-scrolling: touch; background: var(--bg); position: relative; }
         .canvas {
-            width: 800px;
-            min-height: 600px;
-            background: var(--canvas-bg);
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            position: relative;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-            flex-shrink: 0;
+            width: 800px; min-height: 600px; background: var(--canvas-bg); border: 1px solid var(--border);
+            border-radius: 6px; position: relative; margin: 16px auto;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5); transform-origin: top center;
         }
         .canvas-grid {
-            position: absolute;
-            inset: 0;
-            background-image:
-                linear-gradient(var(--border) 1px, transparent 1px),
-                linear-gradient(90deg, var(--border) 1px, transparent 1px);
-            background-size: 20px 20px;
-            opacity: 0.25;
-            pointer-events: none;
+            position: absolute; inset: 0;
+            background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px);
+            background-size: 20px 20px; opacity: 0.25; pointer-events: none;
         }
         .canvas-element {
-            position: absolute;
-            border: 1px solid transparent;
-            cursor: move;
-            transition: border-color 0.1s, box-shadow 0.1s;
-            user-select: none;
+            position: absolute; border: 1px solid transparent;
+            transition: border-color 0.1s, box-shadow 0.1s; user-select: none; touch-action: none;
             overflow: visible;
         }
-        .canvas-element:hover { border-color: rgba(199,91,91,0.5); }
         .canvas-element.selected {
             border-color: var(--highlight);
-            box-shadow: 0 0 0 1px var(--highlight), 0 0 12px rgba(199,91,91,0.15);
-            z-index: 100;
+            box-shadow: 0 0 0 1px var(--highlight), 0 0 12px rgba(199,91,91,0.15); z-index: 100;
         }
         .resize-handle {
-            position: absolute;
-            width: 8px;
-            height: 8px;
-            background: var(--highlight);
-            border-radius: 50%;
-            display: none;
-            border: 1px solid var(--bg);
+            position: absolute; width: 20px; height: 20px; background: var(--highlight);
+            border-radius: 50%; display: none; border: 2px solid var(--bg); z-index: 101;
+            cursor: nwse-resize;
         }
         .canvas-element.selected .resize-handle { display: block; }
-        .resize-handle.nw { top: -5px; left: -5px; cursor: nw-resize; }
-        .resize-handle.ne { top: -5px; right: -5px; cursor: ne-resize; }
-        .resize-handle.sw { bottom: -5px; left: -5px; cursor: sw-resize; }
-        .resize-handle.se { bottom: -5px; right: -5px; cursor: se-resize; }
+        .resize-handle.nw { top: -10px; left: -10px; cursor: nw-resize; }
+        .resize-handle.ne { top: -10px; right: -10px; cursor: ne-resize; }
+        .resize-handle.sw { bottom: -10px; left: -10px; cursor: sw-resize; }
+        .resize-handle.se { bottom: -10px; right: -10px; cursor: se-resize; }
         .el-label-below {
-            position: absolute;
-            bottom: -18px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 10px;
-            color: var(--text-dim);
-            white-space: nowrap;
-            pointer-events: none;
-        }
-        .el-value-display {
-            position: absolute;
-            top: -18px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 10px;
-            color: var(--text-dim);
-            white-space: nowrap;
-            pointer-events: none;
-            background: var(--panel);
-            padding: 1px 6px;
-            border-radius: 3px;
+            position: absolute; bottom: -18px; left: 50%; transform: translateX(-50%);
+            font-size: 10px; color: var(--text-dim); white-space: nowrap; pointer-events: none;
         }
         .empty-state {
-            position: absolute;
-            inset: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            color: var(--text-dim);
-            pointer-events: none;
+            position: absolute; inset: 0; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; color: var(--text-dim); pointer-events: none;
         }
         .empty-state svg { opacity: 0.2; }
-        .empty-state p { font-size: 13px; margin-top: 12px; opacity: 0.5; }
-        .properties-panel {
-            width: 280px;
-            background: var(--panel);
-            border-left: 1px solid var(--border);
-            display: flex;
-            flex-direction: column;
-            overflow-y: auto;
-            flex-shrink: 0;
+        .empty-state p { font-size: 14px; margin-top: 12px; opacity: 0.5; }
+        .zoom-controls {
+            position: absolute; bottom: 16px; right: 16px; display: flex; flex-direction: column; gap: 4px; z-index: 50;
         }
-        .prop-group {
-            padding: 14px;
-            border-bottom: 1px solid var(--border);
+        .zoom-btn {
+            width: 40px; height: 40px; border-radius: 50%; background: var(--panel); border: 1px solid var(--border);
+            color: var(--text); font-size: 18px; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; -webkit-appearance: none;
         }
-        .prop-group:last-child { border-bottom: none; }
-        .prop-label {
-            font-size: 10px;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            color: var(--text-dim);
-            margin-bottom: 10px;
-            font-weight: 600;
+        .zoom-btn:active { background: var(--accent-hover); }
+        .zoom-level {
+            width: 40px; height: 28px; display: flex; align-items: center; justify-content: center;
+            font-size: 10px; color: var(--text-dim); background: var(--panel); border: 1px solid var(--border); border-radius: 14px;
         }
-        .prop-row {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 8px;
+        .bottom-bar {
+            height: 56px; background: var(--panel); border-top: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-around; padding: 0 8px;
+            padding-bottom: var(--safe-bottom); flex-shrink: 0; z-index: 60;
         }
-        .prop-row:last-child { margin-bottom: 0; }
-        .prop-row label {
-            width: 75px;
-            font-size: 11px;
-            color: var(--text-dim);
-            flex-shrink: 0;
+        .bottom-btn {
+            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+            padding: 4px 12px; border: none; background: none; color: var(--text-dim); font-size: 10px;
+            font-family: inherit; cursor: pointer; -webkit-appearance: none;
         }
-        .prop-row input, .prop-row select {
-            flex: 1;
-            background: var(--bg);
-            border: 1px solid var(--border);
-            color: var(--text);
-            padding: 5px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-family: inherit;
-            min-width: 0;
+        .bottom-btn.active { color: var(--highlight); }
+        .bottom-btn svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+        .fab {
+            position: absolute; bottom: 72px; right: 16px; width: 56px; height: 56px; border-radius: 50%;
+            background: var(--highlight); border: none; color: #fff; font-size: 28px;
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
+            box-shadow: 0 4px 16px rgba(199,91,91,0.4); z-index: 50; -webkit-appearance: none;
         }
-        .prop-row input:focus, .prop-row select:focus {
-            outline: none;
-            border-color: var(--highlight);
+        .fab:active { transform: scale(0.92); background: var(--highlight-hover); }
+        .sheet-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.6); opacity: 0; pointer-events: none;
+            transition: opacity 0.25s; z-index: 200;
         }
-        .prop-row input[type="color"] {
-            padding: 2px;
-            height: 26px;
-            cursor: pointer;
+        .sheet-overlay.open { opacity: 1; pointer-events: auto; }
+        .sheet {
+            position: fixed; bottom: 0; left: 0; right: 0; background: var(--panel);
+            border-radius: 16px 16px 0 0; padding: 20px 16px;
+            padding-bottom: calc(16px + var(--safe-bottom));
+            transform: translateY(100%);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            z-index: 201; max-height: 70vh; display: flex; flex-direction: column;
         }
-        .prop-row input[type="range"] {
-            padding: 0;
-            height: 6px;
-            -webkit-appearance: none;
-            background: var(--accent);
-            border-radius: 3px;
+        .sheet.open { transform: translateY(0); }
+        .sheet-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+        .sheet-title { font-size: 16px; font-weight: 600; }
+        .sheet-close {
+            width: 32px; height: 32px; border-radius: 50%; background: var(--accent); border: none;
+            color: var(--text); font-size: 18px; display: flex; align-items: center; justify-content: center; cursor: pointer;
         }
-        .prop-row input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 14px;
-            height: 14px;
-            background: var(--highlight);
-            border-radius: 50%;
-            cursor: pointer;
+        .sheet-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; overflow-y: auto; }
+        .sheet-item {
+            display: flex; flex-direction: column; align-items: center; gap: 8px;
+            padding: 16px 8px; border-radius: 12px; background: var(--bg); border: 1px solid var(--border);
+            cursor: pointer; transition: all 0.15s;
         }
-        .prop-row .range-val {
-            width: 36px;
-            text-align: right;
-            font-size: 11px;
-            color: var(--text-dim);
+        .sheet-item:active { background: var(--accent); transform: scale(0.96); }
+        .sheet-item-icon {
+            width: 32px; height: 32px; border-radius: 6px; background: var(--highlight); opacity: 0.5;
+            display: flex; align-items: center; justify-content: center; overflow: hidden;
         }
-        .code-preview {
-            display: none;
-            flex: 1;
-            padding: 20px;
-            overflow: auto;
+        .sheet-item-icon img { width: 100%; height: 100%; object-fit: cover; }
+        .sheet-item-label { font-size: 12px; color: var(--text-dim); }
+        .prop-sheet .sheet-grid { display: block; }
+        .prop-group-m { margin-bottom: 16px; }
+        .prop-label-m {
+            font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
+            color: var(--text-dim); margin-bottom: 10px; font-weight: 600;
         }
-        .code-preview.active { display: block; }
-        .code-block {
-            background: #08080e;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            padding: 20px;
-            font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
-            font-size: 12px;
-            line-height: 1.7;
-            color: #a0a0b0;
-            white-space: pre-wrap;
-            overflow-x: auto;
+        .prop-row-m { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+        .prop-row-m label { width: 80px; font-size: 13px; color: var(--text-dim); flex-shrink: 0; }
+        .prop-row-m input, .prop-row-m select {
+            flex: 1; background: var(--bg); border: 1px solid var(--border); color: var(--text);
+            padding: 10px 12px; border-radius: 8px; font-size: 14px; font-family: inherit; min-width: 0; -webkit-appearance: none;
+        }
+        .prop-row-m input:focus, .prop-row-m select:focus { outline: none; border-color: var(--highlight); }
+        .prop-row-m input[type="color"] { padding: 4px; height: 40px; }
+        .prop-row-m input[type="range"] {
+            padding: 0; height: 6px; -webkit-appearance: none; background: var(--accent); border-radius: 3px;
+        }
+        .prop-row-m input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 18px; height: 18px; background: var(--highlight); border-radius: 50%; cursor: pointer;
+        }
+        .prop-row-m .range-val { width: 40px; text-align: right; font-size: 12px; color: var(--text-dim); }
+        .prop-actions-m { display: flex; gap: 10px; margin-top: 12px; }
+        .prop-actions-m .header-btn { flex: 1; padding: 12px; font-size: 14px; }
+        .prop-actions-m .header-btn.danger { background: #8b3a3a; border-color: #8b3a3a; }
+        .layer-item-m {
+            display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 8px;
+            background: var(--bg); border: 1px solid var(--border); margin-bottom: 8px; cursor: pointer;
+        }
+        .layer-item-m.selected { border-color: var(--highlight); background: var(--accent); }
+        .layer-item-m .layer-icon { width: 36px; height: 36px; border-radius: 8px; background: var(--highlight); opacity: 0.4; flex-shrink: 0; overflow: hidden; }
+        .layer-item-m .layer-icon img { width: 100%; height: 100%; object-fit: cover; }
+        .layer-item-m .layer-info { flex: 1; }
+        .layer-item-m .layer-type { font-size: 14px; font-weight: 500; }
+        .layer-item-m .layer-id { font-size: 11px; color: var(--text-dim); font-family: monospace; }
+        .layer-visibility-m {
+            width: 36px; height: 36px; border-radius: 8px; background: var(--accent); border: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: center; font-size: 14px; color: var(--text-dim); flex-shrink: 0;
+        }
+        .layer-visibility-m.hidden { opacity: 0.3; }
+        .param-item-m {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 12px; border-radius: 8px; background: var(--bg); border: 1px solid var(--border); margin-bottom: 8px;
+        }
+        .param-item-m .param-name { font-family: monospace; font-size: 14px; color: var(--text); }
+        .param-item-m .param-meta { font-size: 12px; color: var(--text-dim); }
+        .add-param-btn-m { width: 100%; padding: 14px; font-size: 14px; margin-top: 8px; }
+        .code-block-m {
+            background: #08080e; border: 1px solid var(--border); border-radius: 8px; padding: 16px;
+            font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; font-size: 11px; line-height: 1.6;
+            color: #a0a0b0; white-space: pre-wrap; overflow-x: auto; max-height: 50vh; overflow-y: auto;
         }
         .code-tag { color: #c75b5b; }
         .code-attr { color: #6b9a8a; }
         .code-val { color: #c9a96e; }
         .code-comment { color: #5a5a6a; font-style: italic; }
         .code-decl { color: #7a8ab0; }
-        .layer-item {
-            padding: 6px 10px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 11px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 3px;
-            transition: all 0.12s;
-            border-left: 2px solid transparent;
-        }
-        .layer-item:hover { background: var(--accent); }
-        .layer-item.selected { background: var(--accent); border-left-color: var(--highlight); }
-        .layer-visibility {
-            width: 14px;
-            height: 14px;
-            border-radius: 2px;
-            border: 1px solid var(--text-dim);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 9px;
-            color: var(--text-dim);
-            flex-shrink: 0;
-        }
-        .layer-visibility.hidden { opacity: 0.3; }
         .toast {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%) translateY(80px);
-            background: var(--panel);
-            border: 1px solid var(--border);
-            padding: 10px 24px;
-            border-radius: 6px;
-            font-size: 12px;
-            opacity: 0;
-            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-            z-index: 1000;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.4);
-            pointer-events: none;
+            position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(80px);
+            background: var(--panel); border: 1px solid var(--border); padding: 12px 28px;
+            border-radius: 8px; font-size: 14px; opacity: 0;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); z-index: 300;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.4); pointer-events: none; white-space: nowrap;
         }
-        .toast.show {
-            transform: translateX(-50%) translateY(0);
-            opacity: 1;
+        .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+        .context-menu {
+            position: fixed; background: var(--panel); border: 1px solid var(--border);
+            border-radius: 10px; padding: 8px 0; min-width: 180px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5); z-index: 250; display: none;
         }
-        .param-list-item {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 4px 0;
-            font-size: 11px;
+        .context-menu.open { display: block; }
+        .context-item { padding: 12px 16px; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 10px; }
+        .context-item:active { background: var(--accent); }
+        .context-item.danger { color: #d46e6e; }
+        .selection-toolbar {
+            position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
+            background: var(--panel); border: 1px solid var(--border); border-radius: 24px;
+            padding: 6px 12px; display: none; align-items: center; gap: 8px; z-index: 90;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.3);
         }
-        .param-list-item .param-name {
-            color: var(--text);
-            font-family: 'SF Mono', monospace;
-            font-size: 11px;
+        .selection-toolbar.visible { display: flex; }
+        .sel-btn {
+            width: 32px; height: 32px; border-radius: 50%; background: var(--accent); border: none;
+            color: var(--text); display: flex; align-items: center; justify-content: center;
+            font-size: 16px; cursor: pointer;
         }
-        .param-list-item .param-type {
-            color: var(--text-dim);
-            font-size: 10px;
+        .sel-btn:active { background: var(--highlight); }
+        .image-upload-row {
+            display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
         }
-        .add-param-btn {
-            width: 100%;
-            margin-top: 8px;
-            padding: 5px;
-            font-size: 11px;
+        .image-upload-row label { width: 80px; font-size: 13px; color: var(--text-dim); flex-shrink: 0; }
+        .image-upload-btn {
+            flex: 1; padding: 10px 12px; border-radius: 8px; background: var(--bg); border: 1px dashed var(--border);
+            color: var(--text-dim); font-size: 13px; cursor: pointer; text-align: center; font-family: inherit;
         }
-        .no-selection {
-            padding: 20px;
-            text-align: center;
-            color: var(--text-dim);
-            font-size: 12px;
+        .image-upload-btn:active { background: var(--accent); }
+        .image-preview {
+            width: 40px; height: 40px; border-radius: 6px; object-fit: cover; border: 1px solid var(--border);
         }
-        .prop-actions {
-            display: flex;
-            gap: 8px;
-            margin-top: 10px;
+        .image-preview-empty {
+            width: 40px; height: 40px; border-radius: 6px; background: var(--accent); border: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: center; font-size: 10px; color: var(--text-dim);
         }
-        .prop-actions .header-btn {
-            flex: 1;
-            padding: 6px;
-            font-size: 11px;
+        .size-presets {
+            display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px;
         }
-        /* Scrollbar styling */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        .size-preset {
+            padding: 6px 12px; border-radius: 6px; background: var(--bg); border: 1px solid var(--border);
+            color: var(--text-dim); font-size: 11px; cursor: pointer; font-family: inherit;
+        }
+        .size-preset:active { background: var(--accent); color: var(--text); }
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--accent-hover); }
+        ::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 2px; }
     </style>
 <base target="_blank">
 </head>
 <body>
     <div class="header">
         <div class="logo">KUIML ACE</div>
-        <div class="header-info">v2.0 | No-code KUIML skin builder</div>
         <div class="header-spacer"></div>
-        <button class="header-btn" onclick="loadDemo()">Load Demo</button>
+        <button class="header-btn" onclick="loadDemo()">Demo</button>
         <button class="header-btn" onclick="clearCanvas()">Clear</button>
-        <button class="header-btn" onclick="exportXML()">Export XML</button>
-        <button class="header-btn primary" onclick="copyCode()">Copy Code</button>
+        <button class="header-btn icon-only" onclick="showCodeSheet()" title="XML">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+        </button>
+        <button class="header-btn primary" onclick="copyCode()">Copy</button>
     </div>
     <div class="main">
-        <div class="sidebar">
-            <div class="sidebar-section">
-                <div class="sidebar-title">Components</div>
-                <div class="component-list">
-                    <div class="component-item" draggable="true" data-type="Knob">
-                        <div class="component-icon" style="border-radius:50%;"></div>
-                        Knob
-                    </div>
-                    <div class="component-item" draggable="true" data-type="Slider">
-                        <div class="component-icon" style="width:18px;height:5px;"></div>
-                        Slider
-                    </div>
-                    <div class="component-item" draggable="true" data-type="Button">
-                        <div class="component-icon" style="border-radius:2px;"></div>
-                        Button
-                    </div>
-                    <div class="component-item" draggable="true" data-type="ToggleSwitch">
-                        <div class="component-icon" style="width:20px;height:10px;border-radius:5px;"></div>
-                        Toggle Switch
-                    </div>
-                    <div class="component-item" draggable="true" data-type="Label">
-                        <div class="component-icon" style="background:var(--text-dim);opacity:0.4;"></div>
-                        Label
-                    </div>
-                    <div class="component-item" draggable="true" data-type="ParamText">
-                        <div class="component-icon" style="background:#6b9a8a;opacity:0.5;"></div>
-                        Param Text
-                    </div>
-                    <div class="component-item" draggable="true" data-type="Panel">
-                        <div class="component-icon" style="background:transparent;border:1px solid var(--highlight);"></div>
-                        Panel
-                    </div>
-                    <div class="component-item" draggable="true" data-type="Image">
-                        <div class="component-icon" style="background:var(--text-dim);opacity:0.3;"></div>
-                        Image
-                    </div>
-                    <div class="component-item" draggable="true" data-type="Meter">
-                        <div class="component-icon" style="width:5px;height:14px;"></div>
-                        Meter
-                    </div>
+        <div class="canvas-wrapper" id="canvasWrapper">
+            <div class="canvas" id="canvas">
+                <div class="canvas-grid"></div>
+                <div class="empty-state" id="emptyState">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <rect x="3" y="3" width="18" height="18" rx="2"/>
+                        <line x1="12" y1="8" x2="12" y2="16"/>
+                        <line x1="8" y1="12" x2="16" y2="12"/>
+                    </svg>
+                    <p>Tap + to add components</p>
                 </div>
             </div>
-            <div class="sidebar-section">
-                <div class="sidebar-title">Parameters</div>
-                <div id="paramList"></div>
-                <button class="header-btn add-param-btn" onclick="addParameter()">+ Add Parameter</button>
+            <div class="selection-toolbar" id="selectionToolbar">
+                <button class="sel-btn" onclick="nudge(0,-1)">&#8593;</button>
+                <button class="sel-btn" onclick="nudge(0,1)">&#8595;</button>
+                <button class="sel-btn" onclick="nudge(-1,0)">&#8592;</button>
+                <button class="sel-btn" onclick="nudge(1,0)">&#8594;</button>
+                <div style="width:1px;height:20px;background:var(--border);margin:0 4px;"></div>
+                <button class="sel-btn" onclick="resizeSelected(0.9)">-</button>
+                <button class="sel-btn" onclick="resizeSelected(1.1)">+</button>
+                <div style="width:1px;height:20px;background:var(--border);margin:0 4px;"></div>
+                <button class="sel-btn" onclick="duplicateSelected()">&#10697;</button>
+                <button class="sel-btn" onclick="deleteSelected()" style="color:#d46e6e;">&#10005;</button>
             </div>
-            <div class="sidebar-section" style="flex:1;overflow-y:auto;">
-                <div class="sidebar-title">Layers</div>
-                <div id="layerList"></div>
-            </div>
-        </div>
-        <div class="canvas-area">
-            <div class="canvas-tabs">
-                <div class="tab active" onclick="switchTab('design')" id="tabDesign">Design</div>
-                <div class="tab" onclick="switchTab('code')" id="tabCode">XML Preview</div>
-            </div>
-            <div class="canvas-wrapper" id="designTab">
-                <div class="canvas" id="canvas" ondrop="handleDrop(event)" ondragover="handleDragOver(event)">
-                    <div class="canvas-grid"></div>
-                    <div class="empty-state" id="emptyState">
-                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                            <rect x="3" y="3" width="18" height="18" rx="2"/>
-                            <line x1="12" y1="8" x2="12" y2="16"/>
-                            <line x1="8" y1="12" x2="16" y2="12"/>
-                        </svg>
-                        <p>Drag components onto the canvas</p>
-                    </div>
-                </div>
-            </div>
-            <div class="code-preview" id="codeTab">
-                <div class="code-block" id="codeBlock"></div>
+            <div class="zoom-controls">
+                <button class="zoom-btn" onclick="zoomIn()">+</button>
+                <div class="zoom-level" id="zoomLevel">100%</div>
+                <button class="zoom-btn" onclick="zoomOut()">-</button>
             </div>
         </div>
-        <div class="properties-panel" id="propertiesPanel">
-            <div class="no-selection">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.3;margin-bottom:8px;">
-                    <rect x="3" y="3" width="18" height="18" rx="2"/>
-                </svg>
-                <div>Select an element to edit properties</div>
-            </div>
+        <button class="fab" onclick="showAddSheet()">+</button>
+        <div class="bottom-bar">
+            <button class="bottom-btn" onclick="showAddSheet()">
+                <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                Add
+            </button>
+            <button class="bottom-btn" onclick="showLayersSheet()">
+                <svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+                Layers
+            </button>
+            <button class="bottom-btn" onclick="showParamsSheet()">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                Params
+            </button>
+            <button class="bottom-btn" onclick="showPropsSheet()" id="propsBtn">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v6m0 6v6m4.22-10.22l4.24-4.24M6.34 6.34L2.1 2.1m17.8 17.8l-4.24-4.24M6.34 17.66l-4.24 4.24M23 12h-6m-6 0H1m20.07-4.93l-4.24 4.24M6.34 6.34l-4.24-4.24"/></svg>
+                Props
+            </button>
         </div>
     </div>
+    <div class="sheet-overlay" id="addOverlay" onclick="closeAllSheets()"></div>
+    <div class="sheet" id="addSheet">
+        <div class="sheet-header"><div class="sheet-title">Add Component</div><button class="sheet-close" onclick="closeAllSheets()">&times;</button></div>
+        <div class="sheet-grid" id="addSheetGrid"></div>
+    </div>
+    <div class="sheet-overlay" id="layersOverlay" onclick="closeAllSheets()"></div>
+    <div class="sheet" id="layersSheet">
+        <div class="sheet-header"><div class="sheet-title">Layers</div><button class="sheet-close" onclick="closeAllSheets()">&times;</button></div>
+        <div id="layersSheetContent"></div>
+    </div>
+    <div class="sheet-overlay" id="paramsOverlay" onclick="closeAllSheets()"></div>
+    <div class="sheet" id="paramsSheet">
+        <div class="sheet-header"><div class="sheet-title">Parameters</div><button class="sheet-close" onclick="closeAllSheets()">&times;</button></div>
+        <div id="paramsSheetContent"></div>
+        <button class="header-btn add-param-btn-m" onclick="addParameter()">+ Add Parameter</button>
+    </div>
+    <div class="sheet-overlay" id="propsOverlay" onclick="closeAllSheets()"></div>
+    <div class="sheet prop-sheet" id="propsSheet">
+        <div class="sheet-header"><div class="sheet-title" id="propsSheetTitle">Properties</div><button class="sheet-close" onclick="closeAllSheets()">&times;</button></div>
+        <div id="propsSheetContent"><div style="text-align:center;color:var(--text-dim);padding:40px 0;">Select an element to edit</div></div>
+    </div>
+    <div class="sheet-overlay" id="codeOverlay" onclick="closeAllSheets()"></div>
+    <div class="sheet" id="codeSheet">
+        <div class="sheet-header"><div class="sheet-title">XML Preview</div><button class="sheet-close" onclick="closeAllSheets()">&times;</button></div>
+        <div class="code-block-m" id="codeBlock"></div>
+        <button class="header-btn add-param-btn-m" onclick="copyCode()">Copy to Clipboard</button>
+    </div>
+    <div class="context-menu" id="contextMenu">
+        <div class="context-item" onclick="duplicateSelected();hideContextMenu()">Duplicate</div>
+        <div class="context-item" onclick="showPropsSheet();hideContextMenu()">Edit Properties</div>
+        <div class="context-item danger" onclick="deleteSelected();hideContextMenu()">Delete</div>
+    </div>
     <div class="toast" id="toast"></div>
+    <input type="file" id="imageInput" accept="image/*" style="display:none;" onchange="handleImageUpload(event)">
 
     <script>
-        // --- State ---
-        let elements = [];
-        let parameters = [];
-        let selectedId = null;
-        let draggedType = null;
-        let dragOffset = { x: 0, y: 0 };
-        let isDragging = false;
-        let isResizing = false;
-        let resizeDir = '';
-        let startPos = { x: 0, y: 0 };
-        let startRect = {};
-        let elementCounter = 0;
-        let paramCounter = 0;
-
+        let elements = [], parameters = [], selectedId = null;
+        let elementCounter = 0, paramCounter = 0, zoom = 1;
+        let touchState = { active: false, id: null, startX: 0, startY: 0, elStartX: 0, elStartY: 0, mode: 'move', dir: '' };
+        let longPressTimer = null;
+        let pendingImageElId = null;
+        const uploadedImages = {};
         const canvas = document.getElementById('canvas');
         const emptyState = document.getElementById('emptyState');
-        const propertiesPanel = document.getElementById('propertiesPanel');
-        const layerList = document.getElementById('layerList');
-        const paramList = document.getElementById('paramList');
-        const codeBlock = document.getElementById('codeBlock');
-        const toast = document.getElementById('toast');
+        const selectionToolbar = document.getElementById('selectionToolbar');
+        const canvasWrapper = document.getElementById('canvasWrapper');
+        const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
-        // --- Component defaults ---
+        const componentTypes = [
+            { type: 'Knob', icon: 'circle', label: 'Knob' },
+            { type: 'Slider', icon: 'slider', label: 'Slider' },
+            { type: 'Button', icon: 'rect', label: 'Button' },
+            { type: 'ToggleSwitch', icon: 'switch', label: 'Toggle' },
+            { type: 'Label', icon: 'text', label: 'Label' },
+            { type: 'ParamText', icon: 'value', label: 'Param Text' },
+            { type: 'Panel', icon: 'panel', label: 'Panel' },
+            { type: 'Image', icon: 'img', label: 'Image' },
+            { type: 'Meter', icon: 'meter', label: 'Meter' },
+        ];
+
         const componentDefaults = {
-            Knob: {
-                tag: 'IMAGE_PARAM_KNOB',
-                w: 64, h: 64,
-                param_id: '',
-                image: 'knob.png',
-                images_count: 101,
-                image_orientation: 'vertical',
-                text: 'Gain',
-                color: '#c75b5b',
-                opacity: 1,
-                visible: true
-            },
-            Slider: {
-                tag: 'IMAGE_PARAM_SLIDER',
-                w: 24, h: 120,
-                param_id: '',
-                image: 'slider.png',
-                thumb_image: 'slider_thumb.png',
-                orientation: 'vertical',
-                text: 'Volume',
-                color: '#6b9a8a',
-                opacity: 1,
-                visible: true
-            },
-            Button: {
-                tag: 'IMAGE_PARAM_BUTTON',
-                w: 64, h: 32,
-                param_id: '',
-                image: 'button.png',
-                images_count: 2,
-                image_orientation: 'horizontal',
-                loop: 'true',
-                text: 'Bypass',
-                color: '#2a2a3a',
-                opacity: 1,
-                visible: true
-            },
-            ToggleSwitch: {
-                tag: 'IMAGE_PARAM_TOGGLE_SWITCH',
-                w: 48, h: 24,
-                param_id: '',
-                image: 'switch.png',
-                images_count: 2,
-                image_orientation: 'horizontal',
-                text: 'Power',
-                color: '#c75b5b',
-                opacity: 1,
-                visible: true
-            },
-            Label: {
-                tag: 'TEXT',
-                w: 100, h: 20,
-                text: 'Label',
-                color: '#e0e0e8',
-                font_size: '13',
-                font_weight: 'normal',
-                opacity: 1,
-                visible: true
-            },
-            ParamText: {
-                tag: 'PARAM_TEXT',
-                w: 60, h: 20,
-                param_id: '',
-                text: '0.0',
-                color: '#e0e0e8',
-                font_size: '12',
-                opacity: 1,
-                visible: true
-            },
-            Panel: {
-                tag: 'CELL',
-                w: 200, h: 150,
-                text: '',
-                color: '#16161e',
-                opacity: 1,
-                visible: true
-            },
-            Image: {
-                tag: 'IMAGE',
-                w: 100, h: 100,
-                image: 'image.png',
-                text: '',
-                color: '#2a2a3a',
-                opacity: 1,
-                visible: true
-            },
-            Meter: {
-                tag: 'IMAGE_PARAM_METER',
-                w: 16, h: 120,
-                param_id: '',
-                image: 'meter.png',
-                images_count: 101,
-                image_orientation: 'vertical',
-                text: '',
-                color: '#c9a96e',
-                opacity: 1,
-                visible: true
-            }
+            Knob: { tag: 'IMAGE_PARAM_KNOB', w: 64, h: 64, param_id: '', image: 'knob.png', images_count: 101, image_orientation: 'vertical', text: 'Gain', color: '#c75b5b', opacity: 1, visible: true },
+            Slider: { tag: 'IMAGE_PARAM_SLIDER', w: 24, h: 120, param_id: '', image: 'slider.png', thumb_image: 'slider_thumb.png', orientation: 'vertical', text: 'Volume', color: '#6b9a8a', opacity: 1, visible: true },
+            Button: { tag: 'IMAGE_PARAM_BUTTON', w: 64, h: 32, param_id: '', image: 'button.png', images_count: 2, image_orientation: 'horizontal', loop: 'true', text: 'Bypass', color: '#2a2a3a', opacity: 1, visible: true },
+            ToggleSwitch: { tag: 'IMAGE_PARAM_TOGGLE_SWITCH', w: 48, h: 24, param_id: '', image: 'switch.png', images_count: 2, image_orientation: 'horizontal', text: 'Power', color: '#c75b5b', opacity: 1, visible: true },
+            Label: { tag: 'TEXT', w: 100, h: 20, text: 'Label', color: '#e0e0e8', font_size: '13', font_weight: 'normal', opacity: 1, visible: true },
+            ParamText: { tag: 'PARAM_TEXT', w: 60, h: 20, param_id: '', text: '0.0', color: '#e0e0e8', font_size: '12', opacity: 1, visible: true },
+            Panel: { tag: 'CELL', w: 200, h: 150, text: '', color: '#16161e', opacity: 1, visible: true },
+            Image: { tag: 'IMAGE', w: 100, h: 100, image: 'image.png', text: '', color: '#2a2a3a', opacity: 1, visible: true },
+            Meter: { tag: 'IMAGE_PARAM_METER', w: 16, h: 120, param_id: '', image: 'meter.png', images_count: 101, image_orientation: 'vertical', text: '', color: '#c9a96e', opacity: 1, visible: true }
         };
 
-        // --- Drag & Drop ---
-        document.querySelectorAll('.component-item').forEach(item => {
-            item.addEventListener('dragstart', (e) => {
-                draggedType = item.dataset.type;
-                e.dataTransfer.effectAllowed = 'copy';
-            });
+        // Init add sheet
+        const addSheetGrid = document.getElementById('addSheetGrid');
+        componentTypes.forEach(ct => {
+            const div = document.createElement('div');
+            div.className = 'sheet-item';
+            div.onclick = () => { addComponentAtCenter(ct.type); closeAllSheets(); };
+            let s = '';
+            if (ct.icon === 'circle') s = 'border-radius:50%;';
+            else if (ct.icon === 'switch') s = 'width:28px;height:14px;border-radius:7px;';
+            else if (ct.icon === 'slider') s = 'width:20px;height:6px;';
+            else if (ct.icon === 'meter') s = 'width:6px;height:20px;';
+            else if (ct.icon === 'text') s = 'background:var(--text-dim);opacity:0.4;';
+            else if (ct.icon === 'panel') s = 'background:transparent;border:2px solid var(--highlight);';
+            else if (ct.icon === 'img') s = 'background:var(--text-dim);opacity:0.3;';
+            else if (ct.icon === 'value') s = 'background:#6b9a8a;opacity:0.5;';
+            div.innerHTML = '<div class="sheet-item-icon" style="' + s + '"></div><span class="sheet-item-label">' + ct.label + '</span>';
+            addSheetGrid.appendChild(div);
         });
 
-        function handleDragOver(e) {
-            e.preventDefault();
-            e.dataTransfer.dropEffect = 'copy';
-        }
-
-        function handleDrop(e) {
-            e.preventDefault();
-            if (!draggedType) return;
+        // Unified input handling
+        function getPointerPos(e) {
             const rect = canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            createElement(draggedType, x, y);
-            draggedType = null;
+            let clientX, clientY;
+            if (e.touches && e.touches.length > 0) {
+                clientX = e.touches[0].clientX; clientY = e.touches[0].clientY;
+            } else if (e.changedTouches && e.changedTouches.length > 0) {
+                clientX = e.changedTouches[0].clientX; clientY = e.changedTouches[0].clientY;
+            } else {
+                clientX = e.clientX; clientY = e.clientY;
+            }
+            return { x: (clientX - rect.left) / zoom, y: (clientY - rect.top) / zoom };
         }
 
-        // --- Element Creation ---
+        function elementAtPos(x, y) {
+            for (let i = elements.length - 1; i >= 0; i--) {
+                const el = elements[i];
+                if (!el.visible) continue;
+                if (x >= el.x && x <= el.x + el.width && y >= el.y && y <= el.y + el.height) return el;
+            }
+            return null;
+        }
+
+        function isOnResizeHandle(x, y, el) {
+            const handles = [
+                { dir: 'se', cx: el.x + el.width, cy: el.y + el.height },
+                { dir: 'nw', cx: el.x, cy: el.y },
+                { dir: 'ne', cx: el.x + el.width, cy: el.y },
+                { dir: 'sw', cx: el.x, cy: el.y + el.height }
+            ];
+            for (const h of handles) {
+                const dist = Math.sqrt(Math.pow(x - h.cx, 2) + Math.pow(y - h.cy, 2));
+                if (dist < 15) return h.dir;
+            }
+            return null;
+        }
+
+        // Mouse events
+        canvas.addEventListener('mousedown', handlePointerDown);
+        document.addEventListener('mousemove', handlePointerMove);
+        document.addEventListener('mouseup', handlePointerUp);
+
+        // Touch events
+        canvas.addEventListener('touchstart', handlePointerDown, { passive: false });
+        canvas.addEventListener('touchmove', handlePointerMove, { passive: false });
+        canvas.addEventListener('touchend', handlePointerUp, { passive: false });
+        canvas.addEventListener('touchcancel', handlePointerUp, { passive: false });
+
+        function handlePointerDown(e) {
+            if (isTouchDevice && e.type === 'mousedown') return;
+            if (e.type === 'touchstart') e.preventDefault();
+            const pos = getPointerPos(e);
+            const el = elementAtPos(pos.x, pos.y);
+
+            if (el) {
+                const handleDir = isOnResizeHandle(pos.x, pos.y, el);
+                if (handleDir && el.id === selectedId) {
+                    touchState = { active: true, id: el.id, startX: pos.x, startY: pos.y, elStartX: el.x, elStartY: el.y, elStartW: el.width, elStartH: el.height, mode: 'resize', dir: handleDir };
+                } else {
+                    selectElement(el.id);
+                    touchState = { active: true, id: el.id, startX: pos.x, startY: pos.y, elStartX: el.x, elStartY: el.y, mode: 'move', dir: '' };
+                }
+                if (e.type === 'touchstart') {
+                    longPressTimer = setTimeout(() => {
+                        if (touchState.active) {
+                            touchState.active = false;
+                            const t = e.touches[0];
+                            showContextMenu(t.clientX, t.clientY);
+                        }
+                    }, 600);
+                }
+            } else {
+                selectedId = null;
+                renderCanvas();
+                updateSelectionToolbar();
+            }
+        }
+
+        function handlePointerMove(e) {
+            if (!touchState.active) return;
+            if (e.type === 'touchmove') { e.preventDefault(); clearTimeout(longPressTimer); }
+            const pos = getPointerPos(e);
+            const el = elements.find(x => x.id === touchState.id);
+            if (!el) return;
+
+            if (touchState.mode === 'move') {
+                el.x = Math.round(touchState.elStartX + (pos.x - touchState.startX));
+                el.y = Math.round(touchState.elStartY + (pos.y - touchState.startY));
+                renderCanvas();
+            } else if (touchState.mode === 'resize') {
+                const dx = pos.x - touchState.startX;
+                const dy = pos.y - touchState.startY;
+                const dir = touchState.dir;
+                if (dir.indexOf('e') >= 0) el.width = Math.max(16, Math.round(touchState.elStartW + dx));
+                if (dir.indexOf('s') >= 0) el.height = Math.max(16, Math.round(touchState.elStartH + dy));
+                if (dir.indexOf('w') >= 0) {
+                    const newW = Math.max(16, Math.round(touchState.elStartW - dx));
+                    el.x = touchState.elStartX + (touchState.elStartW - newW);
+                    el.width = newW;
+                }
+                if (dir.indexOf('n') >= 0) {
+                    const newH = Math.max(16, Math.round(touchState.elStartH - dy));
+                    el.y = touchState.elStartY + (touchState.elStartH - newH);
+                    el.height = newH;
+                }
+                renderCanvas();
+            }
+        }
+
+        function handlePointerUp(e) {
+            clearTimeout(longPressTimer);
+            if (touchState.active) {
+                touchState.active = false;
+                updatePropsSheet();
+            }
+        }
+
+        // Context menu
+        function showContextMenu(x, y) {
+            const m = document.getElementById('contextMenu');
+            m.style.left = Math.min(x, window.innerWidth - 200) + 'px';
+            m.style.top = Math.min(y, window.innerHeight - 150) + 'px';
+            m.classList.add('open');
+        }
+        function hideContextMenu() { document.getElementById('contextMenu').classList.remove('open'); }
+        document.addEventListener('touchstart', (e) => { if (!e.target.closest('.context-menu')) hideContextMenu(); }, { passive: true });
+        document.addEventListener('mousedown', (e) => { if (!e.target.closest('.context-menu')) hideContextMenu(); });
+
+        // Creation
+        function addComponentAtCenter(type) {
+            const r = canvasWrapper.getBoundingClientRect();
+            const sl = canvasWrapper.scrollLeft, st = canvasWrapper.scrollTop;
+            const cx = (sl + r.width / 2) / zoom - canvas.offsetLeft;
+            const cy = (st + r.height / 2) / zoom - canvas.offsetTop;
+            createElement(type, cx, cy);
+        }
         function createElement(type, x, y) {
             elementCounter++;
-            const id = `control_${elementCounter}`;
+            const id = 'control_' + elementCounter;
             const def = JSON.parse(JSON.stringify(componentDefaults[type]));
-
-            // Auto-assign param_id if available
             if (def.param_id !== undefined) {
                 const avail = parameters.filter(p => !elements.some(e => e.param_id === p.id));
-                if (avail.length > 0) {
-                    def.param_id = avail[0].id;
-                } else {
-                    def.param_id = `param_${paramCounter}`;
-                }
+                if (avail.length > 0) def.param_id = avail[0].id;
+                else def.param_id = 'param_' + paramCounter;
             }
-
-            const el = {
-                id, type,
-                x: Math.round(x - def.w / 2),
-                y: Math.round(y - def.h / 2),
-                width: def.w,
-                height: def.h,
-                ...def
-            };
+            const el = { id, type, x: Math.round(x - def.w / 2), y: Math.round(y - def.h / 2), width: def.w, height: def.h, ...def };
             elements.push(el);
             renderCanvas();
             selectElement(id);
-            updateLayers();
-            updateParamList();
-            showToast(`${type} added`);
+            updateLayersSheet();
+            updateParamsSheet();
+            showToast(type + ' added');
         }
 
-        // --- Canvas Rendering ---
+        // Rendering
         function renderCanvas() {
             canvas.querySelectorAll('.canvas-element').forEach(e => e.remove());
-            if (elements.length === 0) {
-                emptyState.style.display = 'flex';
-            } else {
-                emptyState.style.display = 'none';
-            }
-
+            emptyState.style.display = elements.length === 0 ? 'flex' : 'none';
             elements.forEach(el => {
                 if (!el.visible) return;
                 const div = document.createElement('div');
@@ -739,9 +579,7 @@
                 div.style.height = el.height + 'px';
                 div.style.opacity = el.opacity;
                 div.dataset.id = el.id;
-
                 renderElementVisual(div, el);
-
                 if (el.id === selectedId) {
                     ['nw', 'ne', 'sw', 'se'].forEach(dir => {
                         const h = document.createElement('div');
@@ -749,42 +587,42 @@
                         div.appendChild(h);
                     });
                 }
-
-                div.addEventListener('mousedown', (e) => {
-                    if (e.target.classList.contains('resize-handle')) {
-                        isResizing = true;
-                        resizeDir = e.target.classList[1];
-                        startPos = { x: e.clientX, y: e.clientY };
-                        startRect = { ...el };
-                        e.stopPropagation();
-                    } else {
-                        isDragging = true;
-                        dragOffset = { x: e.clientX - el.x, y: e.clientY - el.y };
-                        selectElement(el.id);
-                    }
-                });
-
                 canvas.appendChild(div);
             });
         }
 
         function renderElementVisual(div, el) {
             const type = el.type;
+            const customImg = uploadedImages[el.id];
+
+            if (customImg) {
+                div.style.background = 'transparent';
+                div.style.borderRadius = '0';
+                const img = document.createElement('img');
+                img.src = customImg;
+                img.style.width = '100%';
+                img.style.height = '100%';
+                img.style.objectFit = 'contain';
+                img.style.pointerEvents = 'none';
+                img.style.borderRadius = '2px';
+                div.appendChild(img);
+                if (el.text) addLabel(div, el.text, 'below');
+                return;
+            }
 
             if (type === 'Knob') {
                 div.style.borderRadius = '50%';
-                div.style.background = `radial-gradient(circle at 35% 35%, ${lighten(el.color, 25)}, ${el.color})`;
-                div.style.boxShadow = `inset 0 2px 8px rgba(0,0,0,0.3), 0 2px 6px rgba(0,0,0,0.4)`;
-                // Indicator line
+                div.style.background = 'radial-gradient(circle at 35% 35%, ' + lighten(el.color, 25) + ', ' + el.color + ')';
+                div.style.boxShadow = 'inset 0 2px 8px rgba(0,0,0,0.3), 0 2px 6px rgba(0,0,0,0.4)';
                 const ind = document.createElement('div');
-                ind.style.cssText = `position:absolute;top:8px;left:50%;width:2px;height:${el.width*0.25}px;background:rgba(255,255,255,0.6);transform:translateX(-50%);border-radius:1px;`;
+                ind.style.cssText = 'position:absolute;top:8px;left:50%;width:2px;height:' + (el.width * 0.25) + 'px;background:rgba(255,255,255,0.6);transform:translateX(-50%);border-radius:1px;';
                 div.appendChild(ind);
                 addLabel(div, el.text, 'below');
             } else if (type === 'Slider') {
-                div.style.background = `linear-gradient(to top, ${el.color} 60%, #0a0a14 60%)`;
+                div.style.background = 'linear-gradient(to top, ' + el.color + ' 60%, #0a0a14 60%)';
                 div.style.borderRadius = '12px';
                 const thumb = document.createElement('div');
-                thumb.style.cssText = `position:absolute;bottom:40%;left:50%;transform:translateX(-50%);width:${el.width+8}px;height:8px;background:#e0e0e8;border-radius:4px;box-shadow:0 1px 4px rgba(0,0,0,0.4);`;
+                thumb.style.cssText = 'position:absolute;bottom:40%;left:50%;transform:translateX(-50%);width:' + (el.width + 8) + 'px;height:8px;background:#e0e0e8;border-radius:4px;box-shadow:0 1px 4px rgba(0,0,0,0.4);';
                 div.appendChild(thumb);
                 addLabel(div, el.text, 'below');
             } else if (type === 'Button') {
@@ -806,7 +644,7 @@
                 div.style.border = '1px solid var(--border)';
                 const thumb = document.createElement('div');
                 const on = el.value === '1' || el.value === 1;
-                thumb.style.cssText = `position:absolute;top:2px;${on ? 'right:2px' : 'left:2px'};width:18px;height:18px;background:${on ? el.color : '#5a5a6a'};border-radius:50%;box-shadow:0 1px 3px rgba(0,0,0,0.3);transition:left 0.15s,right 0.15s;`;
+                thumb.style.cssText = 'position:absolute;top:2px;' + (on ? 'right:2px' : 'left:2px') + ';width:18px;height:18px;background:' + (on ? el.color : '#5a5a6a') + ';border-radius:50%;box-shadow:0 1px 3px rgba(0,0,0,0.3);';
                 div.appendChild(thumb);
                 addLabel(div, el.text, 'below');
             } else if (type === 'Label') {
@@ -846,10 +684,10 @@
                 div.style.fontSize = '10px';
                 div.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>';
             } else if (type === 'Meter') {
-                div.style.background = `linear-gradient(to top, #1a1a2a, ${el.color})`;
+                div.style.background = 'linear-gradient(to top, #1a1a2a, ' + el.color + ')';
                 div.style.borderRadius = '2px';
                 const fill = document.createElement('div');
-                fill.style.cssText = `position:absolute;bottom:0;left:0;right:0;height:65%;background:${el.color};opacity:0.6;border-radius:2px;`;
+                fill.style.cssText = 'position:absolute;bottom:0;left:0;right:0;height:65%;background:' + el.color + ';opacity:0.6;border-radius:2px;';
                 div.appendChild(fill);
             }
         }
@@ -871,148 +709,142 @@
             return '#' + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
         }
 
-        // --- Mouse Events ---
-        document.addEventListener('mousemove', (e) => {
-            if (isDragging && selectedId) {
-                const el = elements.find(x => x.id === selectedId);
-                if (el) {
-                    el.x = Math.round(e.clientX - dragOffset.x);
-                    el.y = Math.round(e.clientY - dragOffset.y);
-                    renderCanvas();
-                    updatePropertiesPanel();
-                }
-            }
-            if (isResizing && selectedId) {
-                const el = elements.find(x => x.id === selectedId);
-                if (el) {
-                    const dx = e.clientX - startPos.x;
-                    const dy = e.clientY - startPos.y;
-                    if (resizeDir.includes('e')) el.width = Math.max(16, Math.round(startRect.width + dx));
-                    if (resizeDir.includes('s')) el.height = Math.max(16, Math.round(startRect.height + dy));
-                    if (resizeDir.includes('w')) {
-                        el.width = Math.max(16, Math.round(startRect.width - dx));
-                        el.x = Math.round(startRect.x + dx);
-                    }
-                    if (resizeDir.includes('n')) {
-                        el.height = Math.max(16, Math.round(startRect.height - dy));
-                        el.y = Math.round(startRect.y + dy);
-                    }
-                    renderCanvas();
-                    updatePropertiesPanel();
-                }
-            }
-        });
-
-        document.addEventListener('mouseup', () => {
-            isDragging = false;
-            isResizing = false;
-        });
-
-        canvas.addEventListener('mousedown', (e) => {
-            if (e.target === canvas || e.target.classList.contains('canvas-grid')) {
-                selectedId = null;
-                renderCanvas();
-                updatePropertiesPanel();
-                updateLayers();
-            }
-        });
-
-        // --- Selection ---
+        // Selection
         function selectElement(id) {
             selectedId = id;
             renderCanvas();
-            updatePropertiesPanel();
-            updateLayers();
+            updateSelectionToolbar();
+            updatePropsSheet();
+            updateLayersSheet();
         }
 
-        // --- Properties Panel ---
-        function updatePropertiesPanel() {
+        function updateSelectionToolbar() {
+            selectionToolbar.classList.toggle('visible', !!selectedId);
+        }
+
+        function nudge(dx, dy) {
+            if (!selectedId) return;
+            const el = elements.find(x => x.id === selectedId);
+            if (el) { el.x += dx; el.y += dy; renderCanvas(); updatePropsSheet(); }
+        }
+
+        function resizeSelected(factor) {
+            if (!selectedId) return;
+            const el = elements.find(x => x.id === selectedId);
+            if (el) {
+                const cx = el.x + el.width / 2;
+                const cy = el.y + el.height / 2;
+                el.width = Math.max(16, Math.round(el.width * factor));
+                el.height = Math.max(16, Math.round(el.height * factor));
+                el.x = Math.round(cx - el.width / 2);
+                el.y = Math.round(cy - el.height / 2);
+                renderCanvas();
+                updatePropsSheet();
+                showToast(factor > 1 ? 'Enlarged' : 'Shrunk');
+            }
+        }
+
+        function duplicateSelected() { if (selectedId) duplicateElement(selectedId); }
+        function deleteSelected() { if (selectedId) deleteElement(selectedId); }
+
+        function duplicateElement(id) {
+            const el = elements.find(x => x.id === id);
+            if (!el) return;
+            elementCounter++;
+            const clone = JSON.parse(JSON.stringify(el));
+            clone.id = 'control_' + elementCounter;
+            clone.x = el.x + 20;
+            clone.y = el.y + 20;
+            elements.push(clone);
+            if (uploadedImages[id]) uploadedImages[clone.id] = uploadedImages[id];
+            renderCanvas();
+            selectElement(clone.id);
+            updateLayersSheet();
+            showToast('Duplicated');
+        }
+
+        function deleteElement(id) {
+            elements = elements.filter(x => x.id !== id);
+            delete uploadedImages[id];
+            if (selectedId === id) selectedId = null;
+            renderCanvas();
+            updateSelectionToolbar();
+            updatePropsSheet();
+            updateLayersSheet();
+            showToast('Deleted');
+        }
+
+        // Properties Sheet
+        function showPropsSheet() { updatePropsSheet(); openSheet('props'); }
+
+        function updatePropsSheet() {
+            const content = document.getElementById('propsSheetContent');
+            const title = document.getElementById('propsSheetTitle');
             if (!selectedId) {
-                propertiesPanel.innerHTML = `
-                    <div class="no-selection">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.3;margin-bottom:8px;">
-                            <rect x="3" y="3" width="18" height="18" rx="2"/>
-                        </svg>
-                        <div>Select an element to edit properties</div>
-                    </div>`;
+                title.textContent = 'Properties';
+                content.innerHTML = '<div style="text-align:center;color:var(--text-dim);padding:40px 0;">Select an element to edit</div>';
                 return;
             }
             const el = elements.find(x => x.id === selectedId);
             if (!el) return;
+            title.textContent = el.type + ' — ' + el.id;
 
-            let html = `<div class="prop-group">
-                <div class="prop-label">${el.type} — ${el.id}</div>
-                <div class="prop-row"><label>ID</label><input value="${el.id}" onchange="updateProp('${el.id}','id',this.value)" title="Unique identifier for this element"></div>
-                <div class="prop-row"><label>X</label><input type="number" value="${el.x}" onchange="updateProp('${el.id}','x',this.value)"></div>
-                <div class="prop-row"><label>Y</label><input type="number" value="${el.y}" onchange="updateProp('${el.id}','y',this.value)"></div>
-                <div class="prop-row"><label>Width</label><input type="number" value="${el.width}" onchange="updateProp('${el.id}','width',this.value)"></div>
-                <div class="prop-row"><label>Height</label><input type="number" value="${el.height}" onchange="updateProp('${el.id}','height',this.value)"></div>
-            </div>`;
+            let html = '<div class="prop-group-m"><div class="prop-label-m">Position & Size</div>';
+            html += '<div class="prop-row-m"><label>ID</label><input value="' + el.id + '" onchange="updateProp(\'' + el.id + '\',\'id\',this.value)"></div>';
+            html += '<div class="prop-row-m"><label>X</label><input type="number" value="' + el.x + '" onchange="updateProp(\'' + el.id + '\',\'x\',this.value)"></div>';
+            html += '<div class="prop-row-m"><label>Y</label><input type="number" value="' + el.y + '" onchange="updateProp(\'' + el.id + '\',\'y\',this.value)"></div>';
+            html += '<div class="prop-row-m"><label>W</label><input type="number" value="' + el.width + '" onchange="updateProp(\'' + el.id + '\',\'width\',this.value)"></div>';
+            html += '<div class="prop-row-m"><label>H</label><input type="number" value="' + el.height + '" onchange="updateProp(\'' + el.id + '\',\'height\',this.value)"></div>';
+            html += '<div class="size-presets">';
+            html += '<button class="size-preset" onclick="resizeSelected(0.5)">50%</button>';
+            html += '<button class="size-preset" onclick="resizeSelected(0.75)">75%</button>';
+            html += '<button class="size-preset" onclick="resizeSelected(1.0)">100%</button>';
+            html += '<button class="size-preset" onclick="resizeSelected(1.5)">150%</button>';
+            html += '<button class="size-preset" onclick="resizeSelected(2.0)">200%</button>';
+            html += '</div></div>';
 
-            // Param ID selector for param controls
             if (el.param_id !== undefined) {
-                let paramOptions = '<option value="">(none)</option>';
-                parameters.forEach(p => {
-                    paramOptions += `<option value="${p.id}" ${el.param_id === p.id ? 'selected' : ''}>${p.id} (${p.type})</option>`;
-                });
-                html += `<div class="prop-group">
-                    <div class="prop-label">Parameter Binding</div>
-                    <div class="prop-row"><label>param_id</label><select onchange="updateProp('${el.id}','param_id',this.value)">${paramOptions}</select></div>
-                </div>`;
+                let opts = '<option value="">(none)</option>';
+                parameters.forEach(p => { opts += '<option value="' + p.id + '"' + (el.param_id === p.id ? ' selected' : '') + '>' + p.id + ' (' + p.type + ')</option>'; });
+                html += '<div class="prop-group-m"><div class="prop-label-m">Parameter</div><div class="prop-row-m"><label>param_id</label><select onchange="updateProp(\'' + el.id + '\',\'param_id\',this.value)">' + opts + '</select></div></div>';
             }
 
-            // Appearance
-            html += `<div class="prop-group">
-                <div class="prop-label">Appearance</div>`;
-            if (el.text !== undefined) {
-                html += `<div class="prop-row"><label>Text</label><input value="${el.text}" onchange="updateProp('${el.id}','text',this.value)"></div>`;
-            }
-            if (el.color !== undefined) {
-                html += `<div class="prop-row"><label>Color</label><input type="color" value="${el.color}" onchange="updateProp('${el.id}','color',this.value)"></div>`;
-            }
-            if (el.font_size !== undefined) {
-                html += `<div class="prop-row"><label>Font Size</label><input type="number" value="${el.font_size}" onchange="updateProp('${el.id}','font_size',this.value)"></div>`;
-            }
-            if (el.font_weight !== undefined) {
-                html += `<div class="prop-row"><label>Weight</label><select onchange="updateProp('${el.id}','font_weight',this.value)"><option value="normal" ${el.font_weight === 'normal' ? 'selected' : ''}>Normal</option><option value="bold" ${el.font_weight === 'bold' ? 'selected' : ''}>Bold</option></select></div>`;
-            }
-            html += `<div class="prop-row"><label>Opacity</label><input type="range" min="0" max="1" step="0.05" value="${el.opacity}" oninput="updateProp('${el.id}','opacity',this.value);this.nextElementSibling.textContent=this.value"><span class="range-val">${el.opacity}</span></div>
-                <div class="prop-row"><label>Visible</label><select onchange="updateProp('${el.id}','visible',this.value)"><option value="true" ${el.visible ? 'selected' : ''}>Yes</option><option value="false" ${!el.visible ? 'selected' : ''}>No</option></select></div>
-            </div>`;
+            html += '<div class="prop-group-m"><div class="prop-label-m">Appearance</div>';
+            if (el.text !== undefined) html += '<div class="prop-row-m"><label>Text</label><input value="' + el.text + '" onchange="updateProp(\'' + el.id + '\',\'text\',this.value)"></div>';
+            if (el.color !== undefined) html += '<div class="prop-row-m"><label>Color</label><input type="color" value="' + el.color + '" onchange="updateProp(\'' + el.id + '\',\'color\',this.value)"></div>';
+            if (el.font_size !== undefined) html += '<div class="prop-row-m"><label>Font</label><input type="number" value="' + el.font_size + '" onchange="updateProp(\'' + el.id + '\',\'font_size\',this.value)"></div>';
+            if (el.font_weight !== undefined) html += '<div class="prop-row-m"><label>Weight</label><select onchange="updateProp(\'' + el.id + '\',\'font_weight\',this.value)"><option value="normal"' + (el.font_weight === 'normal' ? ' selected' : '') + '>Normal</option><option value="bold"' + (el.font_weight === 'bold' ? ' selected' : '') + '>Bold</option></select></div>';
+            html += '<div class="prop-row-m"><label>Opacity</label><input type="range" min="0" max="1" step="0.05" value="' + el.opacity + '" oninput="updateProp(\'' + el.id + '\',\'opacity\',this.value);this.nextElementSibling.textContent=this.value"><span class="range-val">' + el.opacity + '</span></div>';
+            html += '<div class="prop-row-m"><label>Visible</label><select onchange="updateProp(\'' + el.id + '\',\'visible\',this.value)"><option value="true"' + (el.visible ? ' selected' : '') + '>Yes</option><option value="false"' + (!el.visible ? ' selected' : '') + '>No</option></select></div></div>';
 
-            // Image properties
-            if (el.image !== undefined) {
-                html += `<div class="prop-group">
-                    <div class="prop-label">Image</div>
-                    <div class="prop-row"><label>Image</label><input value="${el.image}" onchange="updateProp('${el.id}','image',this.value)"></div>`;
-                if (el.thumb_image !== undefined) {
-                    html += `<div class="prop-row"><label>Thumb</label><input value="${el.thumb_image}" onchange="updateProp('${el.id}','thumb_image',this.value)"></div>`;
+            // Image upload section
+            if (el.image !== undefined || el.type === 'Image' || el.type === 'Panel') {
+                html += '<div class="prop-group-m"><div class="prop-label-m">Custom Image</div>';
+                const hasCustom = uploadedImages[el.id];
+                html += '<div class="image-upload-row"><label>Image</label>';
+                if (hasCustom) {
+                    html += '<img src="' + hasCustom + '" class="image-preview" id="preview_' + el.id + '">';
+                } else {
+                    html += '<div class="image-preview-empty" id="preview_' + el.id + '">None</div>';
                 }
-                if (el.images_count !== undefined) {
-                    html += `<div class="prop-row"><label>Frames</label><input type="number" value="${el.images_count}" onchange="updateProp('${el.id}','images_count',this.value)"></div>`;
+                html += '<button class="header-btn" onclick="triggerImageUpload(\'' + el.id + '\')">Upload</button>';
+                if (hasCustom) {
+                    html += '<button class="header-btn danger" onclick="removeCustomImage(\'' + el.id + '\')">Remove</button>';
                 }
-                if (el.image_orientation !== undefined) {
-                    html += `<div class="prop-row"><label>Orient</label><select onchange="updateProp('${el.id}','image_orientation',this.value)"><option value="vertical" ${el.image_orientation === 'vertical' ? 'selected' : ''}>Vertical</option><option value="horizontal" ${el.image_orientation === 'horizontal' ? 'selected' : ''}>Horizontal</option></select></div>`;
+                html += '</div>';
+                if (el.image !== undefined) {
+                    html += '<div class="prop-row-m"><label>Image path</label><input value="' + el.image + '" onchange="updateProp(\'' + el.id + '\',\'image\',this.value)"></div>';
                 }
-                if (el.orientation !== undefined) {
-                    html += `<div class="prop-row"><label>Orient</label><select onchange="updateProp('${el.id}','orientation',this.value)"><option value="vertical" ${el.orientation === 'vertical' ? 'selected' : ''}>Vertical</option><option value="horizontal" ${el.orientation === 'horizontal' ? 'selected' : ''}>Horizontal</option></select></div>`;
-                }
-                if (el.loop !== undefined) {
-                    html += `<div class="prop-row"><label>Loop</label><select onchange="updateProp('${el.id}','loop',this.value)"><option value="true" ${el.loop === 'true' ? 'selected' : ''}>Yes</option><option value="false" ${el.loop === 'false' ? 'selected' : ''}>No</option></select></div>`;
-                }
-                html += `</div>`;
+                if (el.thumb_image !== undefined) html += '<div class="prop-row-m"><label>Thumb</label><input value="' + el.thumb_image + '" onchange="updateProp(\'' + el.id + '\',\'thumb_image\',this.value)"></div>';
+                if (el.images_count !== undefined) html += '<div class="prop-row-m"><label>Frames</label><input type="number" value="' + el.images_count + '" onchange="updateProp(\'' + el.id + '\',\'images_count\',this.value)"></div>';
+                if (el.image_orientation !== undefined) html += '<div class="prop-row-m"><label>Orient</label><select onchange="updateProp(\'' + el.id + '\',\'image_orientation\',this.value)"><option value="vertical"' + (el.image_orientation === 'vertical' ? ' selected' : '') + '>Vertical</option><option value="horizontal"' + (el.image_orientation === 'horizontal' ? ' selected' : '') + '>Horizontal</option></select></div>';
+                if (el.orientation !== undefined) html += '<div class="prop-row-m"><label>Orient</label><select onchange="updateProp(\'' + el.id + '\',\'orientation\',this.value)"><option value="vertical"' + (el.orientation === 'vertical' ? ' selected' : '') + '>Vertical</option><option value="horizontal"' + (el.orientation === 'horizontal' ? ' selected' : '') + '>Horizontal</option></select></div>';
+                if (el.loop !== undefined) html += '<div class="prop-row-m"><label>Loop</label><select onchange="updateProp(\'' + el.id + '\',\'loop\',this.value)"><option value="true"' + (el.loop === 'true' ? ' selected' : '') + '>Yes</option><option value="false"' + (el.loop === 'false' ? ' selected' : '') + '>No</option></select></div>';
+                html += '</div>';
             }
 
-            // Actions
-            html += `<div class="prop-group">
-                <div class="prop-label">Actions</div>
-                <div class="prop-actions">
-                    <button class="header-btn" onclick="duplicateElement('${el.id}')">Duplicate</button>
-                    <button class="header-btn danger" onclick="deleteElement('${el.id}')">Delete</button>
-                </div>
-            </div>`;
-
-            propertiesPanel.innerHTML = html;
+            html += '<div class="prop-group-m"><div class="prop-label-m">Actions</div><div class="prop-actions-m"><button class="header-btn" onclick="duplicateElement(\'' + el.id + '\');closeAllSheets()">Duplicate</button><button class="header-btn danger" onclick="deleteElement(\'' + el.id + '\');closeAllSheets()">Delete</button></div></div>';
+            content.innerHTML = html;
         }
 
         function updateProp(id, prop, val) {
@@ -1021,293 +853,215 @@
             if (prop === 'id') {
                 if (val && val !== id && !elements.some(e => e.id === val)) {
                     el.id = val;
+                    if (uploadedImages[id]) { uploadedImages[val] = uploadedImages[id]; delete uploadedImages[id]; }
                     if (selectedId === id) selectedId = val;
                 }
-            } else if (prop === 'visible') {
-                el[prop] = val === 'true';
-            } else if (prop === 'loop') {
-                el[prop] = val;
-            } else if (['x', 'y', 'width', 'height', 'opacity', 'images_count', 'font_size', 'value'].includes(prop)) {
-                el[prop] = parseFloat(val);
-            } else {
-                el[prop] = val;
-            }
+            } else if (prop === 'visible') { el[prop] = val === 'true'; }
+            else if (prop === 'loop') { el[prop] = val; }
+            else if (['x', 'y', 'width', 'height', 'opacity', 'images_count', 'font_size', 'value'].includes(prop)) { el[prop] = parseFloat(val); }
+            else { el[prop] = val; }
             renderCanvas();
-            updateLayers();
-            if (prop === 'id') updatePropertiesPanel();
+            updateLayersSheet();
+            if (prop === 'id') updatePropsSheet();
         }
 
-        function deleteElement(id) {
-            elements = elements.filter(x => x.id !== id);
-            if (selectedId === id) selectedId = null;
-            renderCanvas();
-            updatePropertiesPanel();
-            updateLayers();
-            showToast('Element deleted');
+        // Image upload
+        function triggerImageUpload(elId) {
+            pendingImageElId = elId;
+            document.getElementById('imageInput').click();
         }
 
-        function duplicateElement(id) {
-            const el = elements.find(x => x.id === id);
-            if (!el) return;
-            elementCounter++;
-            const clone = JSON.parse(JSON.stringify(el));
-            clone.id = `control_${elementCounter}`;
-            clone.x = el.x + 20;
-            clone.y = el.y + 20;
-            elements.push(clone);
-            renderCanvas();
-            selectElement(clone.id);
-            updateLayers();
-            showToast('Element duplicated');
+        function handleImageUpload(e) {
+            const file = e.target.files[0];
+            if (!file || !pendingImageElId) return;
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                uploadedImages[pendingImageElId] = evt.target.result;
+                renderCanvas();
+                updatePropsSheet();
+                updateLayersSheet();
+                showToast('Image uploaded');
+            };
+            reader.readAsDataURL(file);
+            e.target.value = '';
+            pendingImageElId = null;
         }
 
-        // --- Layers ---
-        function updateLayers() {
-            layerList.innerHTML = '';
-            if (elements.length === 0) {
-                layerList.innerHTML = '<div style="color:var(--text-dim);font-size:11px;padding:4px 0;">No elements</div>';
-                return;
-            }
+        function removeCustomImage(elId) {
+            delete uploadedImages[elId];
+            renderCanvas();
+            updatePropsSheet();
+            updateLayersSheet();
+            showToast('Image removed');
+        }
+
+        // Layers Sheet
+        function showLayersSheet() { updateLayersSheet(); openSheet('layers'); }
+        function updateLayersSheet() {
+            const content = document.getElementById('layersSheetContent');
+            if (elements.length === 0) { content.innerHTML = '<div style="color:var(--text-dim);padding:20px 0;text-align:center;">No elements</div>'; return; }
+            content.innerHTML = '';
             [...elements].reverse().forEach(el => {
                 const div = document.createElement('div');
-                div.className = 'layer-item' + (el.id === selectedId ? ' selected' : '');
+                div.className = 'layer-item-m' + (el.id === selectedId ? ' selected' : '');
                 const vis = el.visible ? 'v' : '';
-                div.innerHTML = `
-                    <div class="layer-visibility ${el.visible ? '' : 'hidden'}" onclick="toggleVisibility('${el.id}',event)">${vis}</div>
-                    <span style="flex:1;overflow:hidden;text-overflow:ellipsis;">${el.type}</span>
-                    <span style="color:var(--text-dim);font-size:10px;font-family:monospace;">${el.id}</span>
-                `;
-                div.onclick = (e) => {
-                    if (!e.target.classList.contains('layer-visibility')) selectElement(el.id);
-                };
-                layerList.appendChild(div);
+                const customImg = uploadedImages[el.id];
+                let iconHtml = '';
+                if (customImg) {
+                    iconHtml = '<img src="' + customImg + '" style="width:100%;height:100%;object-fit:cover;">';
+                }
+                div.innerHTML = '<div class="layer-icon" style="' + getLayerIconStyle(el.type) + '">' + iconHtml + '</div><div class="layer-info"><div class="layer-type">' + el.type + '</div><div class="layer-id">' + el.id + '</div></div><div class="layer-visibility-m ' + (el.visible ? '' : 'hidden') + '" onclick="toggleVisibility(\'' + el.id + '\',event)">' + vis + '</div>';
+                div.onclick = (e) => { if (!e.target.classList.contains('layer-visibility-m')) { selectElement(el.id); closeAllSheets(); } };
+                content.appendChild(div);
             });
         }
-
+        function getLayerIconStyle(type) {
+            if (type === 'Knob') return 'border-radius:50%;background:var(--highlight);';
+            if (type === 'Slider') return 'width:20px;height:6px;background:var(--highlight);';
+            if (type === 'Button') return 'border-radius:3px;background:var(--highlight);';
+            if (type === 'ToggleSwitch') return 'width:24px;height:12px;border-radius:6px;background:var(--highlight);';
+            if (type === 'Label') return 'background:var(--text-dim);opacity:0.4;';
+            if (type === 'ParamText') return 'background:#6b9a8a;opacity:0.5;';
+            if (type === 'Panel') return 'background:transparent;border:2px solid var(--highlight);';
+            if (type === 'Image') return 'background:var(--text-dim);opacity:0.3;';
+            if (type === 'Meter') return 'width:6px;height:20px;background:var(--highlight);';
+            return '';
+        }
         function toggleVisibility(id, e) {
             e.stopPropagation();
             const el = elements.find(x => x.id === id);
-            if (el) {
-                el.visible = !el.visible;
-                renderCanvas();
-                updateLayers();
-            }
+            if (el) { el.visible = !el.visible; renderCanvas(); updateLayersSheet(); }
         }
 
-        // --- Parameters ---
-        function addParameter() {
-            paramCounter++;
-            const id = `param_${paramCounter}`;
-            parameters.push({
-                id,
-                type: 'float',
-                min: 0,
-                max: 100,
-                default: 50,
-                unit: '%'
-            });
-            updateParamList();
-            showToast(`Parameter ${id} added`);
-        }
-
-        function updateParamList() {
-            paramList.innerHTML = '';
-            if (parameters.length === 0) {
-                paramList.innerHTML = '<div style="color:var(--text-dim);font-size:11px;padding:4px 0;">No parameters</div>';
-                return;
-            }
+        // Params Sheet
+        function showParamsSheet() { updateParamsSheet(); openSheet('params'); }
+        function updateParamsSheet() {
+            const content = document.getElementById('paramsSheetContent');
+            if (parameters.length === 0) { content.innerHTML = '<div style="color:var(--text-dim);padding:20px 0;text-align:center;">No parameters</div>'; return; }
+            content.innerHTML = '';
             parameters.forEach(p => {
                 const div = document.createElement('div');
-                div.className = 'param-list-item';
-                div.innerHTML = `<span class="param-name">${p.id}</span><span class="param-type">${p.type} ${p.min}-${p.max}</span>`;
-                paramList.appendChild(div);
+                div.className = 'param-item-m';
+                div.innerHTML = '<div><div class="param-name">' + p.id + '</div><div class="param-meta">' + p.type + ' ' + p.min + '-' + p.max + ' ' + p.unit + '</div></div>';
+                content.appendChild(div);
             });
         }
-
-        // --- Tabs ---
-        function switchTab(tab) {
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.getElementById(tab === 'design' ? 'tabDesign' : 'tabCode').classList.add('active');
-            document.getElementById('designTab').style.display = tab === 'design' ? 'flex' : 'none';
-            document.getElementById('codeTab').classList.toggle('active', tab === 'code');
-            if (tab === 'code') generateCode();
+        function addParameter() {
+            paramCounter++;
+            const id = 'param_' + paramCounter;
+            parameters.push({ id, type: 'float', min: 0, max: 100, default: 50, unit: '%' });
+            updateParamsSheet();
+            showToast('Parameter ' + id + ' added');
         }
 
-        // --- Code Generation ---
+        // Sheet Management
+        function openSheet(name) {
+            closeAllSheets();
+            document.getElementById(name + 'Overlay').classList.add('open');
+            document.getElementById(name + 'Sheet').classList.add('open');
+        }
+        function closeAllSheets() {
+            ['add', 'layers', 'params', 'props', 'code'].forEach(name => {
+                document.getElementById(name + 'Overlay').classList.remove('open');
+                document.getElementById(name + 'Sheet').classList.remove('open');
+            });
+        }
+        function showAddSheet() { openSheet('add'); }
+        function showCodeSheet() { generateCode(); openSheet('code'); }
+
+        // Zoom
+        function zoomIn() { zoom = Math.min(zoom + 0.25, 2.5); applyZoom(); }
+        function zoomOut() { zoom = Math.max(zoom - 0.25, 0.5); applyZoom(); }
+        function applyZoom() {
+            canvas.style.transform = 'scale(' + zoom + ')';
+            document.getElementById('zoomLevel').textContent = Math.round(zoom * 100) + '%';
+        }
+
+        // Code Generation
         function generateCode() {
             let xml = '<?xml version="1.0" encoding="utf-8" ?>\n';
             xml += '<SKIN language_version="2.0">\n\n';
-
-            // Parameters
             if (parameters.length > 0) {
                 xml += '  <!-- Parameters -->\n';
                 parameters.forEach(p => {
-                    xml += `  <PARAM id="${p.id}" type="${p.type}" min="${p.min}" max="${p.max}" default="${p.default}"`;
-                    if (p.unit) xml += ` unit="${p.unit}"`;
+                    xml += '  <PARAM id="' + p.id + '" type="' + p.type + '" min="' + p.min + '" max="' + p.max + '" default="' + p.default + '"';
+                    if (p.unit) xml += ' unit="' + p.unit + '"';
                     xml += ' />\n';
                 });
                 xml += '\n';
             }
-
-            // Window / Layout
-            xml += '  <!-- Main UI Container -->\n';
             xml += '  <WINDOW width="800" height="600" title="Plugin UI">\n';
             xml += '    <LAYER_STACK>\n\n';
-
-            // Background panel
-            xml += '      <!-- Background -->\n';
             xml += '      <CELL width="100%" height="100%">\n';
             xml += '        <IMAGE image="bg.png" width="100%" height="100%"/>\n';
             xml += '      </CELL>\n\n';
-
-            // Controls layer
-            xml += '      <!-- Controls Layer -->\n';
             xml += '      <CELL width="100%" height="100%">\n';
             xml += '        <LAYER_STACK>\n\n';
-
             elements.forEach(el => {
-                if (!el.visible) {
-                    xml += `          <!-- ${el.id} (${el.type}) - hidden -->\n`;
-                    return;
-                }
-
+                if (!el.visible) { xml += '          <!-- ' + el.id + ' hidden -->\n'; return; }
                 const attrs = [];
-                attrs.push(`id="${el.id}"`);
-                attrs.push(`h_position="${el.x}"`);
-                attrs.push(`v_position="${el.y}"`);
-                attrs.push(`width="${el.width}"`);
-                attrs.push(`height="${el.height}"`);
-
-                if (el.param_id) attrs.push(`param_id="${el.param_id}"`);
-                if (el.image) attrs.push(`image="${el.image}"`);
-                if (el.thumb_image) attrs.push(`thumb_image="${el.thumb_image}"`);
-                if (el.images_count !== undefined) attrs.push(`images_count="${el.images_count}"`);
-                if (el.image_orientation) attrs.push(`image_orientation="${el.image_orientation}"`);
-                if (el.orientation) attrs.push(`orientation="${el.orientation}"`);
-                if (el.loop !== undefined) attrs.push(`loop="${el.loop}"`);
-                if (el.text && el.type !== 'Image') attrs.push(`text="${el.text}"`);
-                if (el.color && !['Knob', 'Slider', 'Meter', 'Panel'].includes(el.type)) {
-                    attrs.push(`text_color="${el.color}"`);
-                }
-                if (el.font_size) attrs.push(`font_size="${el.font_size}"`);
-                if (el.font_weight && el.font_weight !== 'normal') attrs.push(`font_weight="${el.font_weight}"`);
-                if (el.opacity < 1) attrs.push(`opacity="${Math.round(el.opacity * 100)}%"`);
-
+                attrs.push('id="' + el.id + '"');
+                attrs.push('h_position="' + el.x + '"');
+                attrs.push('v_position="' + el.y + '"');
+                attrs.push('width="' + el.width + '"');
+                attrs.push('height="' + el.height + '"');
+                if (el.param_id) attrs.push('param_id="' + el.param_id + '"');
+                if (el.image) attrs.push('image="' + el.image + '"');
+                if (el.thumb_image) attrs.push('thumb_image="' + el.thumb_image + '"');
+                if (el.images_count !== undefined) attrs.push('images_count="' + el.images_count + '"');
+                if (el.image_orientation) attrs.push('image_orientation="' + el.image_orientation + '"');
+                if (el.orientation) attrs.push('orientation="' + el.orientation + '"');
+                if (el.loop !== undefined) attrs.push('loop="' + el.loop + '"');
+                if (el.text && el.type !== 'Image') attrs.push('text="' + el.text + '"');
+                if (el.color && !['Knob', 'Slider', 'Meter', 'Panel'].includes(el.type)) attrs.push('text_color="' + el.color + '"');
+                if (el.font_size) attrs.push('font_size="' + el.font_size + '"');
+                if (el.font_weight && el.font_weight !== 'normal') attrs.push('font_weight="' + el.font_weight + '"');
+                if (el.opacity < 1) attrs.push('opacity="' + Math.round(el.opacity * 100) + '%"');
                 const tag = el.tag || 'CELL';
-                const attrStr = attrs.map(a => ' ' + a).join('');
-                xml += `          <${tag}${attrStr} />\n`;
+                xml += '          <' + tag + ' ' + attrs.join(' ') + ' />\n';
             });
-
             xml += '\n        </LAYER_STACK>\n';
             xml += '      </CELL>\n\n';
             xml += '    </LAYER_STACK>\n';
             xml += '  </WINDOW>\n\n';
             xml += '</SKIN>';
 
-            // Syntax highlighting
-            const escaped = xml
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;');
-
+            const escaped = xml.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
             const colored = escaped
                 .replace(/(&lt;\/?)(PARAM|SKIN|WINDOW|LAYER_STACK|CELL|IMAGE|IMAGE_PARAM_KNOB|IMAGE_PARAM_SLIDER|IMAGE_PARAM_BUTTON|IMAGE_PARAM_TOGGLE_SWITCH|TEXT|PARAM_TEXT|IMAGE_PARAM_METER)/g, '<span class="code-tag">$1$2</span>')
                 .replace(/(id|language_version|type|min|max|default|unit|width|height|h_position|v_position|param_id|image|thumb_image|images_count|image_orientation|orientation|loop|text|text_color|font_size|font_weight|opacity)/g, '<span class="code-attr">$1</span>')
                 .replace(/"([^"]*)"/g, '<span class="code-val">"$1"</span>')
                 .replace(/(&lt;!--.*?--&gt;)/g, '<span class="code-comment">$1</span>')
                 .replace(/(&lt;\?xml.*?\?&gt;)/g, '<span class="code-decl">$1</span>');
-
-            codeBlock.innerHTML = colored;
+            document.getElementById('codeBlock').innerHTML = colored;
         }
 
-        // --- Actions ---
-        function clearCanvas() {
-            if (elements.length === 0) return;
-            if (!confirm('Clear all elements? This cannot be undone.')) return;
-            elements = [];
-            selectedId = null;
-            renderCanvas();
-            updatePropertiesPanel();
-            updateLayers();
-            showToast('Canvas cleared');
-        }
-
-        function exportXML() {
-            generateCode();
-            switchTab('code');
-            showToast('XML generated in preview tab');
-        }
-
+        // Copy
         function copyCode() {
             generateCode();
-            const text = codeBlock.textContent;
-            navigator.clipboard.writeText(text).then(() => showToast('Code copied to clipboard'));
+            const text = document.getElementById('codeBlock').textContent;
+            navigator.clipboard.writeText(text).then(() => showToast('Copied to clipboard'));
         }
 
+        // Toast
         function showToast(msg) {
+            const toast = document.getElementById('toast');
             toast.textContent = msg;
             toast.classList.add('show');
             setTimeout(() => toast.classList.remove('show'), 2200);
         }
 
-        // --- Keyboard Shortcuts ---
-        document.addEventListener('keydown', (e) => {
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
-            if (e.key === 'Delete' && selectedId) {
-                deleteElement(selectedId);
-            }
-            if ((e.metaKey || e.ctrlKey) && e.key === 'd' && selectedId) {
-                e.preventDefault();
-                duplicateElement(selectedId);
-            }
-            if ((e.metaKey || e.ctrlKey) && e.key === 'c' && selectedId) {
-                e.preventDefault();
-                duplicateElement(selectedId);
-            }
-            if (e.key === 'ArrowUp' && selectedId) {
-                e.preventDefault();
-                const el = elements.find(x => x.id === selectedId);
-                if (el) { el.y -= e.shiftKey ? 10 : 1; renderCanvas(); updatePropertiesPanel(); }
-            }
-            if (e.key === 'ArrowDown' && selectedId) {
-                e.preventDefault();
-                const el = elements.find(x => x.id === selectedId);
-                if (el) { el.y += e.shiftKey ? 10 : 1; renderCanvas(); updatePropertiesPanel(); }
-            }
-            if (e.key === 'ArrowLeft' && selectedId) {
-                e.preventDefault();
-                const el = elements.find(x => x.id === selectedId);
-                if (el) { el.x -= e.shiftKey ? 10 : 1; renderCanvas(); updatePropertiesPanel(); }
-            }
-            if (e.key === 'ArrowRight' && selectedId) {
-                e.preventDefault();
-                const el = elements.find(x => x.id === selectedId);
-                if (el) { el.x += e.shiftKey ? 10 : 1; renderCanvas(); updatePropertiesPanel(); }
-            }
-        });
-
-        // --- Demo ---
+        // Demo
         function loadDemo() {
             if (elements.length > 0 && !confirm('Replace current design with demo?')) return;
             elements = [];
             parameters = [];
             paramCounter = 0;
             elementCounter = 0;
-
-            // Add parameters
-            ['gain', 'volume', 'tone', 'bypass', 'mix'].forEach(name => {
+            for (const name of ['gain', 'volume', 'tone', 'bypass', 'mix']) {
                 paramCounter++;
-                parameters.push({
-                    id: name,
-                    type: name === 'bypass' ? 'boolean' : 'float',
-                    min: 0,
-                    max: name === 'bypass' ? 1 : 100,
-                    default: name === 'bypass' ? 0 : 50,
-                    unit: name === 'bypass' ? '' : '%'
-                });
-            });
-
-            // Add elements
+                parameters.push({ id: name, type: name === 'bypass' ? 'boolean' : 'float', min: 0, max: name === 'bypass' ? 1 : 100, default: name === 'bypass' ? 0 : 50, unit: name === 'bypass' ? '' : '%' });
+            }
             const demoElements = [
                 { type: 'Panel', x: 20, y: 20, w: 760, h: 560, color: '#12121a' },
                 { type: 'Knob', x: 120, y: 120, param_id: 'gain', text: 'Gain' },
@@ -1321,19 +1075,10 @@
                 { type: 'ParamText', x: 320, y: 350, param_id: 'gain', text: '50.0' },
                 { type: 'Button', x: 520, y: 320, param_id: 'bypass', text: 'Reset' },
             ];
-
             demoElements.forEach(d => {
                 elementCounter++;
                 const def = JSON.parse(JSON.stringify(componentDefaults[d.type]));
-                const el = {
-                    id: `control_${elementCounter}`,
-                    type: d.type,
-                    x: d.x,
-                    y: d.y,
-                    width: d.w || def.w,
-                    height: d.h || def.h,
-                    ...def
-                };
+                const el = { id: 'control_' + elementCounter, type: d.type, x: d.x, y: d.y, width: d.w || def.w, height: d.h || def.h, ...def };
                 if (d.param_id) el.param_id = d.param_id;
                 if (d.text) el.text = d.text;
                 if (d.color) el.color = d.color;
@@ -1341,17 +1086,28 @@
                 if (d.font_weight) el.font_weight = d.font_weight;
                 elements.push(el);
             });
-
             renderCanvas();
-            updatePropertiesPanel();
-            updateLayers();
-            updateParamList();
+            updatePropsSheet();
+            updateLayersSheet();
+            updateParamsSheet();
             showToast('Demo loaded');
         }
 
-        // --- Init ---
-        updateParamList();
-        updateLayers();
+        function clearCanvas() {
+            if (elements.length === 0) return;
+            if (!confirm('Clear all elements?')) return;
+            elements = [];
+            selectedId = null;
+            renderCanvas();
+            updateSelectionToolbar();
+            updatePropsSheet();
+            updateLayersSheet();
+            showToast('Canvas cleared');
+        }
+
+        // Init
+        updateParamsSheet();
+        updateLayersSheet();
         renderCanvas();
     </script>
 </body>
